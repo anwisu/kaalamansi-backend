@@ -2,6 +2,7 @@
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from flask_cors import CORS
+from sklearn.metrics import confusion_matrix
 
 import joblib
 import pandas as pd
@@ -115,6 +116,25 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/quality/all', methods=['GET'])
+def get_quality_data():
+    try:
+        # Retrieve all documents from the quality collection
+        quality_data = list(db.quality.find({}, {'_id': 0}))
+
+        # Return the quality data as JSON response
+        return jsonify({'quality_data': quality_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# @app.route('/quality/heatmap', methods=['GET'])
+# def generate_heatmap():
+    
+#     cm = confusion_matrix(y_test, predict)
+#     conf_matrix = pd.DataFrame(data=cm, columns=['Predicted:0', 'Predicted:1'], index=['Actual:0', 'Actual:1'])
+#     heatmap_data = conf_matrix.to_dict()
+#     return jsonify(heatmap_data)
 
 
 if __name__ == '__main__':
