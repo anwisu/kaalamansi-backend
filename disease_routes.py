@@ -7,15 +7,16 @@ disease_routes = Blueprint('disease_routes', __name__)
 
 # DISEASE PREDICTION ROUTES
 # Define mapping dictionaries
-leaf_mapping = {'Absent': 0, 'Mild': 1, 'Moderate': 2, 'Severe': 3}
-wilt_mapping = {'Absent': 0, 'Mild': 1, 'Moderate': 2, 'Severe': 3}
-pruning_mapping = {'Never': 0, 'Occasional': 1, 'Regular': 2, 'Frequent': 3}
-pesticide_mapping = {'Nothing': 0, 'Fungicide': 1, 'Insecticide': 2}
 discoloration_mapping = {'Absent': 0, 'Present': 1}
 lesions_mapping = {'Absent': 0, 'Present': 1}
 fertilized_mapping = {'No': 0, 'Yes': 1}
 watering_mapping = {'Irregular': 0, 'Regular': 1}
 pest_mapping = {'Absent': 0, 'Present': 1}
+leaf_mapping = {'Absent': 0, 'Mild': 1, 'Moderate': 2, 'Severe': 3}
+wilt_mapping = {'Absent': 0, 'Mild': 1, 'Moderate': 2, 'Severe': 3}
+pruning_mapping = {'Never': 0, 'Occasional': 1, 'Regular': 2, 'Frequent': 3}
+pesticide_mapping = {'Nothing': 0, 'Fungicide': 1, 'Insecticide': 2}
+
 
 @disease_routes.route('/predict/disease', methods=['POST'])
 def predict_disease():
@@ -23,16 +24,16 @@ def predict_disease():
     disease_model = load_disease_model()
     try:
         # Get input features from JSON data
-        d_data = request.get_json()
-        leaf_spots = d_data['leaf_spots']
-        wilting = d_data['wilting']
-        discoloration = d_data['discoloration']
-        lesions = d_data['lesions']
-        fertilized = d_data['fertilized']
-        watering_sched = d_data['watering_sched']
-        pruning = d_data['pruning']
-        pesticide_use = d_data['pesticide_use']
-        pest_presence = d_data['pest_presence']
+        data = request.get_json()
+        leaf_spots = data['leaf_spots']
+        wilting = data['wilting']
+        discoloration = data['discoloration']
+        lesions = data['lesions']
+        fertilized = data['fertilized']
+        watering_sched = data['watering_sched']
+        pruning = data['pruning']
+        pesticide_use = data['pesticide_use']
+        pest_presence = data['pest_presence']
         
         # Map categorical inputs to numerical representations
         leaf_val = leaf_mapping[leaf_spots]
@@ -47,15 +48,16 @@ def predict_disease():
         
         # Create input data for prediction
         input_disease = pd.DataFrame({
-            'leaf_spot': [leaf_val],
-            'leaf_wilting': [wilt_val],
             'discolor': [discolor_val],
-            'leasion': [lesion_val],
+            'lesion': [lesion_val],
             'fertilizer': [fertilized_val],
             'water_sched': [water_val],
+            'pest': [pest_presence_val],
+            'leaf_spot': [leaf_val],
+            'leaf_wilting': [wilt_val],
             'tree_pruning': [pruning_val],
             'pesticide': [pesticide_val],
-            'pest': [pest_presence_val],
+            
         })
         
         # Make prediction using the loaded model

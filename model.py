@@ -4,4 +4,4 @@ def load_quality_model():
     return joblib.load('./model/kalamansi_logreg.pkl')
 
 def load_disease_model():
-    return joblib.load('./model/kalamansi_disease_logreg.pkl')
+    return joblib.load('./model/kalamansi_disease.pkl')
