@@ -86,3 +86,16 @@ def predict_disease():
         return jsonify({'inserted_data': newDisease}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+@disease_routes.route('/disease/all', methods=['GET'])
+def get_AllDisease():
+    from app import db
+    try:
+        # Retrieve all documents from the quality collection
+        disease_data = list(db.disease.find({}, {'_id': 0}))
+
+        # Return the quality data as JSON response
+        return jsonify({'disease_data': disease_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
