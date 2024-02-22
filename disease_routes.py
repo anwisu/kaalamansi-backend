@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from model import load_disease_model
+from bson import ObjectId
 import pandas as pd
 
 disease_routes = Blueprint('disease_routes', __name__)
@@ -97,5 +98,22 @@ def get_AllDisease():
 
         # Return the quality data as JSON response
         return jsonify({'disease_data': disease_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@disease_routes.route('/disease/<id>', methods=['GET'])
+def get_single_disease(id):
+    from app import db
+    try:
+        # Retrieve the document from the disease collection based on its ID
+        disease_data = db.disease.find_one({'_id': ObjectId(id)}, {'_id': 0})
+
+        # Check if the disease exists
+        if disease_data:
+            # Return the disease data as JSON response
+            return jsonify({'disease_data': disease_data}), 200
+        else:
+            # If the disease with the given ID does not exist, return a 404 Not Found response
+            return jsonify({'error': 'Disease not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
