@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from utils.jwtToken import send_token
 from werkzeug.security import generate_password_hash, check_password_hash
+from bson import ObjectId  # Import ObjectId for MongoDB queries
 import jwt
 import datetime
 
@@ -35,20 +36,36 @@ def login_user():
     data = request.json
     user = db.users.find_one({"email": data['email']})
     if not user or not check_password_hash(user['password'], data['password']):
-        return jsonify({'message': 'Invalid email or password'}), 401
+        return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
+    
+    user['_id'] = str(user['_id'])  # Convert ObjectId to string
+    
     token = jwt.encode({'user_id': str(user['_id']), 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, JWT_SECRET)
-    return send_token(token, user), 200
+    
+    response_data = {
+        'success': True,
+        'token': token,
+        'user': user
+    }
+    
+    return jsonify(response_data), 200
 
 # User profile route
-@userRoutes.route('/profile', methods=['GET'])
+@userRoutes.route('/me', methods=['GET'])
 def get_user_profile():
     from app import db
     token = request.headers.get('Authorization').split(' ')[1]
     decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-    user = db.users.find_one({"_id": decoded_token['user_id']})
+    user_id = decoded_token['user_id']
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    # Convert ObjectId to string before serializing to JSON
+    user['_id'] = str(user['_id'])
     return jsonify({'user': user}), 200
 
-# Logout route (optional)
-@userRoutes.route('/logout', methods=['POST'])
+
+@userRoutes.route('/logout', methods=['GET'])
 def logout():
-    return jsonify({'message': 'Logged out successfully'}), 200
+    # Clear the token cookie
+    response = jsonify({'message': 'Logged out successfully'})
+    response.set_cookie('token', '', expires=0, httponly=True)
+    return response, 200
