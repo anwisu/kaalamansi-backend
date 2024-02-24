@@ -40,6 +40,7 @@ def login_user():
     
     user['_id'] = str(user['_id'])  # Convert ObjectId to string
     
+    # token = jwt.encode({'user_id': str(user['_id']), 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, JWT_SECRET)
     token = jwt.encode({'user_id': str(user['_id']), 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, JWT_SECRET)
     
     response_data = {
