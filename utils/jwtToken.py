@@ -9,6 +9,6 @@ def send_token(token, user):
     
     # Set cookie in the response
     response = make_response(response)
-    response.set_cookie('token', token, httponly=True, expires=datetime.datetime.utcnow() + datetime.timedelta(hours=1))
+    response.set_cookie('token', token, httponly=True, expires=datetime.datetime.utcnow() + datetime.timedelta(days=90))
     
     return response
