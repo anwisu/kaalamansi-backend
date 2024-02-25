@@ -6,56 +6,22 @@ from sklearn.metrics import confusion_matrix
 
 qualityRoutes = Blueprint('qualityRoutes', __name__)
 
-# Confusion Matrix
-y_test = np.array([0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1])
-predict = np.array([0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1])
-
-# @qualityRoutes.route('/quality/confusion-matrix', methods=['GET'])
-# def getQualityConfusionMatrix():
-#     cm = confusion_matrix(y_test, predict)
-#     conf_matrix = pd.DataFrame(data=cm, columns=['Predicted:0', 'Predicted:1'], index=['Actual:0', 'Actual:1'])
-#     print('Confusion Matrix:', conf_matrix)  # Log the confusion matrix data
-#     return jsonify(conf_matrix.to_dict())
-# @qualityRoutes.route('/quality/confusion-matrix', methods=['GET'])
-# def getQualityConfusionMatrix():
-#     cm = confusion_matrix(y_test, predict)
-#     conf_matrix_data = []
-
-#     # Extract data for 'Predicted:0' and 'Predicted:1' columns
-#     for idx, row in enumerate(cm):
-#         actual = 'Actual:' + str(idx)
-#         data = [{'x': 'Predicted:0', 'y': int(row[0])}, {'x': 'Predicted:1', 'y': int(row[1])}]
-#         conf_matrix_data.append({'id': actual, 'data': data})
-
-#     return jsonify(conf_matrix_data)
-# @qualityRoutes.route('/quality/confusion-matrix', methods=['GET'])
-# def getQualityConfusionMatrix():
-#     cm = confusion_matrix(y_test, predict)
-#     conf_matrix_data = {'labels': ['Actual:0', 'Actual:1'], 'datasets': []}
-
-#     # Extract data for 'Predicted:0' and 'Predicted:1' columns
-#     for idx, row in enumerate(cm):
-#         actual = 'Actual:' + str(idx)
-#         data = [int(row[0]), int(row[1])]
-#         # conf_matrix_data['datasets'].append({'label': actual, 'data': data})
-#         conf_matrix_data['datasets'].append({'label': 'Predicted:' + str(idx), 'data': data})
-
-#     return jsonify(conf_matrix_data)
 
 @qualityRoutes.route('/quality/confusion-matrix', methods=['GET'])
-def get_confusion_matrix():
-    # Code to generate confusion matrix
-    confusion_matrix_data = {
-        'true_positives': 10,
-        'true_negatives': 20,
-        'false_positives': 5,
-        'false_negatives': 8
-    }
-    return jsonify(confusion_matrix_data)
+def predict():
+    # Assuming you have stored y_test and predict somewhere accessible
+    y_test = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
+    predict = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1]
+    
+    cm = confusion_matrix(y_test, predict)
+    conf_matrix = pd.DataFrame(data=cm, columns=['Predicted:0', 'Predicted:1'], index=['Actual:0', 'Actual:1'])
+    conf_matrix_dict = conf_matrix.to_dict('list') # Convert to a dictionary of lists
+    print("Confusion Matrix:", conf_matrix) 
+    
+
+    return jsonify(conf_matrix_dict)
 
 
-
-# QUALITY PREDICTION ROUTES
 # Define mapping dictionaries
 firm_mapping = {'flabby': 0, 'firm': 1}
 shape_mapping = {'oblong': 0, 'spherical': 1}
