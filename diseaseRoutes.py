@@ -2,8 +2,50 @@ from flask import Blueprint, jsonify, request
 from model import load_disease_model
 from bson import ObjectId
 import pandas as pd
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
 
 diseaseRoutes = Blueprint('diseaseRoutes', __name__)
+
+@diseaseRoutes.route('/disease/classification-report', methods=['GET'])
+def get_classification_report():
+    y_test = [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]
+    y_pred = [0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0]
+
+    report = classification_report(y_test, y_pred, output_dict=True)
+    accuracy = accuracy_score(y_test, y_pred)
+    return jsonify({
+        'report': report,
+        'accuracy': accuracy
+    })
+
+@diseaseRoutes.route('/disease/confusion-matrix', methods=['GET'])
+def predict():
+    y_test = [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]
+    predict = [0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0]
+    
+    cm = confusion_matrix(y_test, predict)
+    conf_matrix = pd.DataFrame(data=cm, columns=['Predicted:0', 'Predicted:1'], index=['Actual:0', 'Actual:1'])
+    conf_matrix_dict = conf_matrix.to_dict('list') # Convert to a dictionary of lists
+    print("Confusion Matrix:", conf_matrix) 
+    
+
+    return jsonify(conf_matrix_dict)
+
+@diseaseRoutes.route('/disease/roc-curve', methods=['GET'])
+def get_roc_curve():
+    y_test = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
+    y_pred = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1]
+
+    # Calculate true positive (TP), false positive (FP), true negative (TN), and false negative (FN) rates
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    roc_auc = auc(fpr, tpr)
+
+    # Convert numpy arrays to lists before returning as JSON
+    return jsonify({
+        'fpr': fpr.tolist(),
+        'tpr': tpr.tolist(),
+        'roc_auc': roc_auc
+    })
 
 
 # DISEASE PREDICTION ROUTES

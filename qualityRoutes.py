@@ -2,14 +2,24 @@ from flask import Blueprint, jsonify, request
 from model import load_quality_model
 import pandas as pd
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
 
 qualityRoutes = Blueprint('qualityRoutes', __name__)
 
+@qualityRoutes.route('/quality/classification-report', methods=['GET'])
+def get_classification_report():
+    y_test = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
+    y_pred = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1]
+
+    report = classification_report(y_test, y_pred, output_dict=True)
+    accuracy = accuracy_score(y_test, y_pred)
+    return jsonify({
+        'report': report,
+        'accuracy': accuracy
+    })
 
 @qualityRoutes.route('/quality/confusion-matrix', methods=['GET'])
 def predict():
-    # Assuming you have stored y_test and predict somewhere accessible
     y_test = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
     predict = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1]
     
@@ -21,6 +31,22 @@ def predict():
 
     return jsonify(conf_matrix_dict)
 
+
+@qualityRoutes.route('/quality/roc-curve', methods=['GET'])
+def get_roc_curve():
+    y_test = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1]
+    y_pred = [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1]
+
+    # Calculate true positive (TP), false positive (FP), true negative (TN), and false negative (FN) rates
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    roc_auc = auc(fpr, tpr)
+
+    # Convert numpy arrays to lists before returning as JSON
+    return jsonify({
+        'fpr': fpr.tolist(),
+        'tpr': tpr.tolist(),
+        'roc_auc': roc_auc
+    })
 
 # Define mapping dictionaries
 firm_mapping = {'flabby': 0, 'firm': 1}
