@@ -6,6 +6,13 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 diseaseRoutes = Blueprint('diseaseRoutes', __name__)
 
+@diseaseRoutes.route('/disease/dataset', methods=['GET'])
+def getDataset():
+    df = pd.read_csv('./model/kalamansi-disease-dataset.csv')
+    shape = df.shape
+
+    return jsonify(shape)
+
 @diseaseRoutes.route('/disease/classification-report', methods=['GET'])
 def get_classification_report():
     y_test = [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]

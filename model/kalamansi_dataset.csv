@@ -1,0 +1,31 @@
+﻿kalamansi_id,size,shape,firmness,skin_color,blemishes,soil_type,sun_exposure,location,fertilized,watering_sched,pruning,pest_prescence,quality
+0,small,oblong,flabby,mixed,not present,clayey,full shade,patio,not fertilized,regular,regular,yes,low
+1,medium,spherical,firm,dull yellow,not present,loamy,full sun,patio,fertilized,regular,regular,no,high
+2,small,oblong,flabby,bright green,not present,clayey,partial shade,balcony,not fertilized,regular,not regular,yes,low
+3,medium,spherical,firm,mixed,not present,sandy,full sun,rooftop,fertilized,irregular,regular,no,high
+4,small,spherical,firm,bright green,present,clayey,full shade,balcony,not fertilized,irregular,regular,no,low
+5,medium,oblong,firm,dull yellow,present,sandy,full sun,balcony,not fertilized,regular,not regular,yes,low
+6,big,oblong,flabby,dull yellow,not present,clayey,full sun,rooftop,not fertilized,irregular,regular,yes,low
+7,medium,oblong,firm,mixed,not present,sandy,full sun,rooftop,fertilized,regular,regular,no,high
+8,small,spherical,firm,mixed,present,sandy,partial shade,rooftop,fertilized,irregular,regular,yes,low
+9,medium,spherical,firm,dull yellow,present,sandy,full sun,rooftop,not fertilized,irregular,not regular,no,low
+10,medium,spherical,firm,mixed,not present,loamy,partial shade,patio,fertilized,regular,regular,no,high
+11,medium,spherical,firm,dull yellow,present,loamy,partial shade,patio,not fertilized,irregular,regular,no,low
+12,medium,spherical,firm,dull yellow,not present,loamy,full sun,balcony,fertilized,regular,regular,no,high
+13,small,oblong,flabby,bright green,present,clayey,full sun,rooftop,fertilized,regular,regular,yes,low
+14,medium,oblong,firm,mixed,not present,loamy,full sun,rooftop,fertilized,regular,regular,no,high
+15,small,spherical,firm,mixed,not present,loamy,partial shade,patio,not fertilized,irregular,not regular,no,low
+16,big,oblong,firm,dull yellow,not present,loamy,partial shade,balcony,fertilized,irregular,regular,no,high
+17,big,spherical,firm,mixed,present,sandy,full shade,rooftop,not fertilized,irregular,regular,yes,low
+18,big,spherical,firm,dull yellow,not present,clayey,partial shade,patio,fertilized,regular,regular,no,high
+19,medium,spherical,firm,dull yellow,not present,sandy,full sun,patio,fertilized,regular,regular,yes,low
+20,small,oblong,firm,mixed,not present,sandy,full sun,balcony,fertilized,regular,not regular,yes,low
+21,big,spherical,firm,dull yellow,not present,loamy,full sun,patio,fertilized,regular,regular,no,high
+22,medium,spherical,flabby,bright green,present,clayey,partial shade,rooftop,not fertilized,irregular,not regular,yes,low
+23,small,oblong,flabby,bright green,not present,sandy,full shade,patio,fertilized,irregular,regular,no,low
+24,medium,oblong,firm,mixed,present,loamy,full sun,balcony,fertilized,regular,regular,yes,low
+25,big,spherical,firm,dull yellow,present,sandy,partial shade,balcony,not fertilized,regular,regular,no,low
+26,small,spherical,flabby,dull yellow,not present,loamy,full shade,patio,not fertilized,regular,not regular,no,low
+27,small,oblong,firm,mixed,not present,clayey,partial shade,balcony,fertilized,irregular,regular,no,low
+28,medium,spherical,firm,mixed,present,loamy,full sun,rooftop,not fertilized,regular,not regular,yes,low
+29,big,oblong,firm,dull yellow,not present,clayey,full sun,patio,fertilized,regular,regular,no,high
