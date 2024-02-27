@@ -6,12 +6,13 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 diseaseRoutes = Blueprint('diseaseRoutes', __name__)
 
-@diseaseRoutes.route('/disease/dataset', methods=['GET'])
+@diseaseRoutes.route('/admin/disease/dataset', methods=['GET'])
 def getDataset():
     df = pd.read_csv('./model/kalamansi-disease-dataset.csv')
     shape = df.shape
+    data = df.to_json(orient='records')  # Convert the DataFrame to a JSON string
 
-    return jsonify(shape)
+    return jsonify({'shape': shape, 'data': data})
 
 @diseaseRoutes.route('/disease/classification-report', methods=['GET'])
 def get_classification_report():

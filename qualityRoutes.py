@@ -10,8 +10,9 @@ qualityRoutes = Blueprint('qualityRoutes', __name__)
 def getDataset():
     df = pd.read_csv('./model/kalamansi_dataset.csv')
     shape = df.shape
+    data = df.to_json(orient='records')  # Convert the DataFrame to a JSON string
 
-    return jsonify(shape)
+    return jsonify({'shape': shape, 'data': data})
 
 @qualityRoutes.route('/quality/classification-report', methods=['GET'])
 def get_classification_report():

@@ -100,15 +100,16 @@ def logout():
 def getAllUsers():
     from app import db
     try:
-        # Retrieve all documents from the quality collection
-        users = list(db.users.find({}, {'_id': 0}))
+
+        users = list(db.users.find())
+        for user in users:
+            user['_id'] = str(user['_id'])
 
         # Return the quality data as JSON response
         return jsonify({'users': users}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-from bson import ObjectId
 
 @userRoutes.route('/admin/users/<id>', methods=['GET'])
 @isAuthenticatedUser
