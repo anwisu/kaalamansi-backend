@@ -138,7 +138,7 @@ def predict_disease():
         return jsonify({'error': str(e)}), 500
     
 
-@diseaseRoutes.route('/disease/all', methods=['GET'])
+@diseaseRoutes.route('/admin/disease/all', methods=['GET'])
 def get_AllDisease():
     from app import db
     try:

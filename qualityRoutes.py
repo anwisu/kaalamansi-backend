@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 qualityRoutes = Blueprint('qualityRoutes', __name__)
 
-@qualityRoutes.route('/quality/dataset', methods=['GET'])
+@qualityRoutes.route('/admin/quality/dataset', methods=['GET'])
 def getDataset():
     df = pd.read_csv('./model/kalamansi_dataset.csv')
     shape = df.shape
@@ -152,7 +152,7 @@ def predict_quality():
         return jsonify({'error': str(e)}), 500
 
 
-@qualityRoutes.route('/quality/all', methods=['GET'])
+@qualityRoutes.route('/admin/quality/all', methods=['GET'])
 def get_AllQuality():
     from app import db
     try:
