@@ -143,10 +143,10 @@ def predict_disease():
 def get_AllDisease():
     from app import db
     try:
-        # Retrieve all documents from the quality collection
+        # Retrieve all documents from the disease collection
         disease_data = list(db.disease.find({}, {'_id': 0}))
 
-        # Return the quality data as JSON response
+        # Return the disease data as JSON response
         return jsonify({'disease_data': disease_data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -2,7 +2,9 @@ from flask import Blueprint, jsonify, request
 from model import load_quality_model
 import pandas as pd
 import numpy as np
+from bson import ObjectId 
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
+from middleware.auth import isAuthenticatedUser, authorizeRoles
 
 qualityRoutes = Blueprint('qualityRoutes', __name__)
 
@@ -125,6 +127,11 @@ def predict_quality():
         quality_prediction = quality_model.predict(input_quality)
         # Map prediction back to categorical representation
         predicted_quality = 'high' if quality_prediction[0] == 1 else 'low'
+        
+        # Fetch recommendations based on input features
+        soil_recommendation = db.qualityRecommendations.find_one({'factor': 'soil_type', 'value': soil_type})
+        watering_recommendation = db.qualityRecommendations.find_one({'factor': 'watering_sched', 'value': watering_sched})
+        sun_recommendation = db.qualityRecommendations.find_one({'factor': 'sun_exposure', 'value': sun_exposure})
 
         # Store input features and prediction in MongoDB (quality collection)
         quality_input = {
@@ -140,15 +147,69 @@ def predict_quality():
             'watering_sched': watering_sched,
             'pruning': pruning,
             'pest_presence': pest_presence,
-            'predicted_quality': predicted_quality
+            'predicted_quality': predicted_quality,
         }
         quality_id = db.quality.insert_one(quality_input).inserted_id
 
+        # Combine input features, prediction, and recommendations
+        combined_data = {
+            'quality_id': quality_id,  # Keep quality_id as ObjectId
+            'soil_recommendation': soil_recommendation['recommendation'] if soil_recommendation else '',
+            'watering_recommendation': watering_recommendation['recommendation'] if watering_recommendation else '',
+            'sun_recommendation': sun_recommendation['recommendation'] if sun_recommendation else '',
+            # 'quality_data': quality_input  # Add quality input data to combined data
+        }
+
+
         # return jsonify({'quality_id': str(quality_id), 'predicted_quality': predicted_quality}), 200
-        # Retrieve the inserted data from the database
         newQuality = db.quality.find_one({'_id': quality_id}, {'_id': 0})
 
-        return jsonify({'inserted_data': newQuality}), 200
+        combined_id = db.combinedQualityResult.insert_one(combined_data).inserted_id
+
+        # Retrieve the inserted data from the database
+        newCombined = db.combinedQualityResult.find_one({'_id': combined_id})
+
+        # Check if document was found
+        if newCombined is not None:
+            # Convert ObjectId to string
+            newCombined['_id'] = str(newCombined['_id'])
+            if 'quality_id' in newCombined:
+                newCombined['quality_id'] = str(newCombined['quality_id'])
+        else:
+            return jsonify({'error': 'Document not found'}), 404
+
+        return jsonify({'reco_data': newCombined}), 200
+    except Exception as e:
+        print(str(e))  # Print error message to console
+        return jsonify({'error': str(e)}), 500
+
+@qualityRoutes.route('/predict/quality/<id>', methods=['GET'])
+def get_latest_predicted_quality(id):
+    from app import db
+    try:
+        # Retrieve the document with the given ID from the combinedQualityResult collection
+        reco_data = db.combinedQualityResult.find_one({'_id': ObjectId(id)})
+        if reco_data:
+            reco_data['_id'] = str(reco_data['_id'])
+            if 'quality_id' in reco_data:
+                reco_data['quality_id'] = str(reco_data['quality_id'])
+            return jsonify({'reco_data': reco_data}), 200
+        else:
+            return jsonify({'error': 'No recommendation data found with the given ID'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@qualityRoutes.route('/admin/quality/<id>', methods=['GET'])
+def get_QualityById(id):
+    from app import db
+    try:
+        # Retrieve the document with the given ID from the quality collection
+        quality_data = db.quality.find_one({'_id': ObjectId(id)})
+        if quality_data:
+            quality_data['_id'] = str(quality_data['_id'])
+            return jsonify({'quality_data': quality_data}), 200
+        else:
+            return jsonify({'error': 'No quality data found with the given ID'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -158,9 +219,22 @@ def get_AllQuality():
     from app import db
     try:
         # Retrieve all documents from the quality collection
-        quality_data = list(db.quality.find({}, {'_id': 0}))
+        # quality_data = list(db.quality.find({}, {'_id': 0}))
+        quality_data = list(db.quality.find())
+        for quality in quality_data:
+            quality['_id'] = str(quality['_id'])
 
-        # Return the quality data as JSON response
         return jsonify({'quality_data': quality_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@qualityRoutes.route('/admin/quality/<id>', methods=['DELETE'])
+def deleteQuality(id):
+    from app import db
+    try:
+        # Delete the document with the given id from the quality collection
+        db.quality.remove({'_id': ObjectId(id)})
+
+        return jsonify({'message': 'Quality data deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

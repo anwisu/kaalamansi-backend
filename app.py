@@ -3,6 +3,7 @@ from flask_cors import CORS
 from database import initialize_database
 from qualityRoutes import qualityRoutes
 from diseaseRoutes import diseaseRoutes
+from recommendationsRoutes import recommendationRoutes
 from userRoutes import configure_jwt_secret, userRoutes
 
 app = Flask(__name__)
@@ -20,6 +21,7 @@ db = initialize_database(app)
 # Register quality and disease routes blueprints
 app.register_blueprint(qualityRoutes)
 app.register_blueprint(diseaseRoutes)
+app.register_blueprint(recommendationRoutes)
 app.register_blueprint(userRoutes)
 
 # Pass JWT secret key to userRoutes.py
