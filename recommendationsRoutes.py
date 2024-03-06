@@ -1,13 +1,60 @@
 from flask import Blueprint, jsonify, request
+from datetime import datetime
 from bson import ObjectId
+from cloudinary.uploader import upload
+import os
+from werkzeug.utils import secure_filename
 
 recommendationRoutes = Blueprint('recommendationRoutes', __name__)
 
 @recommendationRoutes.route('/admin/quality/recommendation/new', methods=['POST'])
 def newQualityRecommendation():
     from app import db
-    data = request.get_json()
+
+    # Get images from the request
+    images = request.files.getlist('images')
+
+    # List to store image URLs
+    image_urls = []
+
+    # Upload each image to Cloudinary
+    for image in images:
+        try:
+            # Save the image temporarily
+            filename = secure_filename(image.filename)
+            image.save(filename)
+
+            # Upload the image to Cloudinary
+            result = upload(filename, folder='recommendations', width=150, crop="scale")
+
+            # Delete the temporary image
+            os.remove(filename)
+
+            # Add the image URL to the list
+            image_urls.append({
+                'public_id': result['public_id'],
+                'url': result['secure_url']
+            })
+        except Exception as e:
+            return jsonify({'message': str(e)}), 400
+
+    # Get other form data
+    factor = request.form.get('factor')
+    value = request.form.get('value')
+    recommendation = request.form.get('recommendation')
+
+    # Prepare data for database
+    data = {
+        'factor': factor,
+        'value': value,
+        'recommendation': recommendation,
+        'images': image_urls,
+        'created_at': datetime.utcnow()
+    }
+
+    # Insert the data into the database
     recommendation_id = db.qualityRecommendations.insert_one(data).inserted_id
+
     return jsonify(str(recommendation_id)), 201
 
 @recommendationRoutes.route('/admin/quality/recommendations/all', methods=['GET'])
