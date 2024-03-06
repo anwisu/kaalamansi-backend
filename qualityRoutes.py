@@ -231,14 +231,20 @@ def get_AllQuality():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@qualityRoutes.route('/admin/quality/<id>', methods=['DELETE'])
-def deleteQuality(id):
+@qualityRoutes.route('/admin/quality/<quality_id>', methods=['DELETE'])
+def delete_quality(quality_id):
     from app import db
     try:
-        # Delete the document with the given id from the quality collection
-        db.quality.remove({'_id': ObjectId(id)})
+        # Convert string to ObjectId
+        quality_id = ObjectId(quality_id)
+        # Delete document from quality collection
+        result = db.quality.delete_one({'_id': quality_id})
+        # Check if a document was deleted
+        if result.deleted_count > 0:
+            return jsonify({'message': 'Document deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Document not found'}), 404
     except Exception as e:
+        print(str(e))  # Print error message to console
         return jsonify({'error': str(e)}), 500
-
-    return jsonify({'message': 'Quality data deleted successfully'}), 200
 
