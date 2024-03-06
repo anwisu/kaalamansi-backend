@@ -182,8 +182,22 @@ def updateUser(id):
         user_id = decoded_token['user_id']
 
         # Retrieve the update data from the request
-        data = request.json
+        data = request.form
         update_data = {k: v for k, v in data.items() if k in ['name', 'email', 'role']}
+
+        # Handle avatar update
+        if 'avatar' in request.files:
+            avatar = request.files['avatar']
+            try:
+                result = upload(avatar, folder='avatars', width=150, crop="scale")
+                avatar_url = result['url']
+                avatar_public_id = result['public_id']
+                update_data['avatar'] = {
+                    "url": avatar_url,
+                    "public_id": avatar_public_id,
+                }
+            except Exception as e:
+                return jsonify({'message': str(e)}), 400
 
         # Update the user document with the given ID
         result = db.users.update_one({"_id": ObjectId(id)}, {"$set": update_data})
