@@ -2,9 +2,11 @@ from flask import Blueprint, jsonify, request
 from utils.jwtToken import send_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson import ObjectId 
+from cloudinary.uploader import upload
+from middleware.auth import isAuthenticatedUser, authorizeRoles
 import jwt
 import datetime
-from middleware.auth import isAuthenticatedUser, authorizeRoles
+
 
 JWT_SECRET = 'hOBIEr9b5guVvBE5IGBeVqwrBAW7NuUS'
 
@@ -20,12 +22,27 @@ def registerUser():
     from app import db
     data = request.json
     hashed_password = generate_password_hash(data['password'])
+
+    # Upload the avatar to Cloudinary
+    avatar = data['avatar']  # Assuming the avatar is sent as a base64 string
+    try:
+        result = upload(avatar, folder='avatars', width=150, crop="scale")
+        avatar_url = result['url']  # Get the URL of the uploaded image
+        avatar_public_id = result['public_id']  # Get the public_id of the uploaded image
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
     user = {
         "name": data['name'],
         "email": data['email'],
         "password": hashed_password,
+        "avatar": {
+            "url": avatar_url,  
+            "public_id": avatar_public_id,  
+        },
+        "created_at": datetime.datetime.utcnow(),
     }
-    result = db.users.insert_one(user)  # Assuming 'users' is the name of your MongoDB collection
+    result = db.users.insert_one(user)
     new_user = db.users.find_one({"_id": result.inserted_id})
     token = jwt.encode({'user_id': str(new_user['_id']), 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=90)}, JWT_SECRET)
     return send_token(token, new_user), 200
@@ -77,9 +94,23 @@ def updateProfile():
     user_id = decoded_token['user_id']
     user = db.users.find_one({"_id": ObjectId(user_id)})
 
-    data = request.json
+    data = request.get_json()
 
     update_data = {k: v for k, v in data.items() if k in ['name', 'email']}
+
+    if 'avatar' in data:
+        avatar = data['avatar']
+        try:
+            result = upload(avatar, folder='avatars', width=150, crop="scale")
+            avatar_url = result['url']
+            avatar_public_id = result['public_id']
+            update_data['avatar'] = {
+                "url": avatar_url,
+                "public_id": avatar_public_id,
+            }
+        except Exception as e:
+            return jsonify({'message': str(e)}), 400
+
     db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
     updated_user = db.users.find_one({"_id": ObjectId(user_id)})
     updated_user['_id'] = str(updated_user['_id'])

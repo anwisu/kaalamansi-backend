@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from model import load_disease_model
 from bson import ObjectId
+from datetime import datetime
 import pandas as pd
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
 
@@ -127,7 +128,8 @@ def predict_disease():
             'pruning': pruning,
             'pesticide_use': pesticide_use,
             'pest_presence': pest_presence,
-            'predicted_disease': predicted_disease
+            'predicted_disease': predicted_disease,
+            'created_at': datetime.utcnow(),
         }
         disease_id = db.disease.insert_one(disease_input).inserted_id
 

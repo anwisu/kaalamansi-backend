@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from model import load_quality_model
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from bson import ObjectId 
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
 from middleware.auth import isAuthenticatedUser, authorizeRoles
@@ -148,6 +149,7 @@ def predict_quality():
             'pruning': pruning,
             'pest_presence': pest_presence,
             'predicted_quality': predicted_quality,
+            'created_at': datetime.utcnow(),
         }
         quality_id = db.quality.insert_one(quality_input).inserted_id
 
@@ -157,6 +159,7 @@ def predict_quality():
             'soil_recommendation': soil_recommendation['recommendation'] if soil_recommendation else '',
             'watering_recommendation': watering_recommendation['recommendation'] if watering_recommendation else '',
             'sun_recommendation': sun_recommendation['recommendation'] if sun_recommendation else '',
+            'created_at': datetime.utcnow(),
             # 'quality_data': quality_input  # Add quality input data to combined data
         }
 
@@ -234,7 +237,8 @@ def deleteQuality(id):
     try:
         # Delete the document with the given id from the quality collection
         db.quality.remove({'_id': ObjectId(id)})
-
-        return jsonify({'message': 'Quality data deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+    return jsonify({'message': 'Quality data deleted successfully'}), 200
+
