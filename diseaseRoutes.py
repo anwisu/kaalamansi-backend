@@ -165,13 +165,33 @@ def predict_disease():
         newCombined = db.combinedDiseaseResult.find_one({'_id': combined_id})
 
         if newCombined is not None:
-                    newCombined['_id'] = str(newCombined['_id'])
-                    if 'disease_id' in newCombined:
-                        newCombined['disease_id'] = str(newCombined['disease_id'])
+            newCombined['_id'] = str(newCombined['_id'])
+            if 'disease_id' in newCombined:
+                newCombined['disease_id'] = str(newCombined['disease_id'])
+        else:
+            return jsonify({'error': 'Document not found'}), 404
+        
+        return jsonify({'reco_data': newCombined}), 200
         # return jsonify({'inserted_data': newDisease}), 200
     except Exception as e:
+        print(str(e))  # Print error message to console
         return jsonify({'error': str(e)}), 500
     
+@diseaseRoutes.route('/predict/disease/<id>', methods=['GET'])
+def get_latest_predicted_disease(id):
+    from app import db
+    try:
+        # Retrieve the document with the given ID from the combinedDiseaseResult collection
+        reco_data = db.combinedDiseaseResult.find_one({'_id': ObjectId(id)})
+        if reco_data:
+            reco_data['_id'] = str(reco_data['_id'])
+            if 'disease_id' in reco_data:
+                reco_data['disease_id'] = str(reco_data['disease_id'])
+            return jsonify({'reco_data': reco_data}), 200
+        else:
+            return jsonify({'error': 'No recommendation data found with the given ID'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @diseaseRoutes.route('/admin/disease/all', methods=['GET'])
 def get_AllDisease():
@@ -186,20 +206,17 @@ def get_AllDisease():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@diseaseRoutes.route('/disease/<id>', methods=['GET'])
-def get_single_disease(id):
+@diseaseRoutes.route('/admin/disease/<id>', methods=['GET'])
+def get_DiseaseById(id):
     from app import db
     try:
-        # Retrieve the document from the disease collection based on its ID
-        disease_data = db.disease.find_one({'_id': ObjectId(id)}, {'_id': 0})
-
-        # Check if the disease exists
+        # Retrieve the document with the given ID from the disease collection
+        disease_data = db.disease.find_one({'_id': ObjectId(id)})
         if disease_data:
-            # Return the disease data as JSON response
+            disease_data['_id'] = str(disease_data['_id'])
             return jsonify({'disease_data': disease_data}), 200
         else:
-            # If the disease with the given ID does not exist, return a 404 Not Found response
-            return jsonify({'error': 'Disease not found'}), 404
+            return jsonify({'error': 'No disease data found with the given ID'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
