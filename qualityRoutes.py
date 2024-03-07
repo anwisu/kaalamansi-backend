@@ -239,6 +239,7 @@ def delete_quality(quality_id):
         quality_id = ObjectId(quality_id)
         # Delete document from quality collection
         result = db.quality.delete_one({'_id': quality_id})
+        db.combinedQualityResult.delete_one({'quality_id': quality_id})
         # Check if a document was deleted
         if result.deleted_count > 0:
             return jsonify({'message': 'Document deleted successfully'}), 200

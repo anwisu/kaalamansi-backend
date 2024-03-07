@@ -57,7 +57,6 @@ def get_roc_curve():
     })
 
 
-# DISEASE PREDICTION ROUTES
 # Define mapping dictionaries
 discoloration_mapping = {'Absent': 0, 'Present': 1}
 lesions_mapping = {'Absent': 0, 'Present': 1}
@@ -117,6 +116,17 @@ def predict_disease():
         # Map prediction back to categorical representation
         predicted_disease = 'infected' if disease_prediction[0] == 1 else 'not infected'
 
+        # Fetch recommendations based on input features
+        fertilizerReco = db.diseaseRecommendations.find_one({'factor': 'fertilized', 'value': fertilized})
+        wateringReco = db.diseaseRecommendations.find_one({'factor': 'watering_sched', 'value': watering_sched})
+        discolorReco = db.diseaseRecommendations.find_one({'factor': 'discoloration', 'value': discoloration})
+        lesionReco = db.diseaseRecommendations.find_one({'factor': 'lesions', 'value': lesions})
+        leafReco = db.diseaseRecommendations.find_one({'factor': 'leaf_spots', 'value': leaf_spots})
+        wiltingReco = db.diseaseRecommendations.find_one({'factor': 'wilting', 'value': wilting})
+        pruningReco = db.diseaseRecommendations.find_one({'factor': 'pruning', 'value': pruning})
+        pestReco = db.diseaseRecommendations.find_one({'factor': 'pest_presence', 'value': pest_presence})
+        pesticideReco = db.diseaseRecommendations.find_one({'factor': 'pesticide_use', 'value': pesticide_use})
+
         # Store input features and prediction in MongoDB (disease collection)
         disease_input = {
             'leaf_spots': leaf_spots,
@@ -133,10 +143,32 @@ def predict_disease():
         }
         disease_id = db.disease.insert_one(disease_input).inserted_id
 
+        # Combine input features, prediction, and recommendations
+        combined_data = {
+            'disease_id': disease_id,  # Keep disease_id as ObjectId
+            'fertilizerReco': fertilizerReco['recommendation'] if fertilizerReco else '',
+            'wateringReco': wateringReco['recommendation'] if wateringReco else '',
+            'discolorReco': discolorReco['recommendation'] if discolorReco else '',
+            'lesionReco': lesionReco['recommendation'] if lesionReco else '',
+            'leafReco': leafReco['recommendation'] if leafReco else '',
+            'wiltingReco': wiltingReco['recommendation'] if wiltingReco else '',
+            'pruningReco': pruningReco['recommendation'] if pruningReco else '',
+            'pestReco': pestReco['recommendation'] if pestReco else '',
+            'pesticideReco': pesticideReco['recommendation'] if pesticideReco else '',
+            'created_at': datetime.utcnow(),
+        }
+
         # Retrieve the inserted data from the database
         newDisease = db.disease.find_one({'_id': disease_id}, {'_id': 0})
 
-        return jsonify({'inserted_data': newDisease}), 200
+        combined_id = db.combinedDiseaseResult.insert_one(combined_data).inserted_id
+        newCombined = db.combinedDiseaseResult.find_one({'_id': combined_id})
+
+        if newCombined is not None:
+                    newCombined['_id'] = str(newCombined['_id'])
+                    if 'disease_id' in newCombined:
+                        newCombined['disease_id'] = str(newCombined['disease_id'])
+        # return jsonify({'inserted_data': newDisease}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
@@ -146,8 +178,9 @@ def get_AllDisease():
     from app import db
     try:
         # Retrieve all documents from the disease collection
-        disease_data = list(db.disease.find({}, {'_id': 0}))
-
+        disease_data = list(db.disease.find())
+        for disease in disease_data:
+                    disease['_id'] = str(disease['_id'])
         # Return the disease data as JSON response
         return jsonify({'disease_data': disease_data}), 200
     except Exception as e:
@@ -167,5 +200,25 @@ def get_single_disease(id):
         else:
             # If the disease with the given ID does not exist, return a 404 Not Found response
             return jsonify({'error': 'Disease not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@diseaseRoutes.route('/admin/disease/<disease_id>', methods=['DELETE'])
+def delete_disease(disease_id):
+    from app import db
+    try:
+        # Convert the disease_id from string to ObjectId
+        disease_id = ObjectId(disease_id)
+        
+        # Delete the disease document from the disease collection
+        result = db.disease.delete_one({'_id': disease_id})
+
+        # Delete the combined disease result document from the combinedDiseaseResult collection
+        db.combinedDiseaseResult.delete_one({'disease_id': disease_id})
+
+        if result.deleted_count > 0:
+            return jsonify({'message': 'Document deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Document not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
