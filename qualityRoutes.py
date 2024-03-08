@@ -175,8 +175,11 @@ def predictQuality():
             # 'quality_id': quality_id, 
             'quality_data': quality_data, 
             'soil_recommendation': soil_recommendation['recommendation'] if soil_recommendation else '',
+            'soil_image': soil_recommendation['image'] if soil_recommendation and 'image' in soil_recommendation else '',
             'watering_recommendation': watering_recommendation['recommendation'] if watering_recommendation else '',
+            'watering_image': watering_recommendation['image'] if watering_recommendation and 'image' in watering_recommendation else '',
             'sun_recommendation': sun_recommendation['recommendation'] if sun_recommendation else '',
+            'sun_image': sun_recommendation['image'] if sun_recommendation and 'image' in sun_recommendation else '',
             'created_at': datetime.utcnow(),
         }
 
