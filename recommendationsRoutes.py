@@ -2,11 +2,6 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime
 from bson import ObjectId
 from cloudinary.uploader import upload
-from pymongo import ReturnDocument
-import base64
-import io
-import os
-from werkzeug.utils import secure_filename
 
 recommendationRoutes = Blueprint('recommendationRoutes', __name__)
 
@@ -14,45 +9,23 @@ recommendationRoutes = Blueprint('recommendationRoutes', __name__)
 @recommendationRoutes.route('/admin/quality/recommendation/new', methods=['POST'])
 def newQualityRecommendation():
     from app import db
+    data = request.json
+    image = data['image']
+    try:
+        result = upload(image, folder='recommendations', width=150, crop="scale")
+        image_url = result['url']  
+        image_public_id = result['public_id'] 
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
-    # Get images from the request
-    images = request.files.getlist('images')
-
-    # List to store image URLs
-    image_urls = []
-
-    # Upload each image to Cloudinary
-    for image in images:
-        try:
-            # Save the image temporarily
-            filename = secure_filename(image.filename)
-            image.save(filename)
-
-            # Upload the image to Cloudinary
-            result = upload(filename, folder='recommendations', width=150, crop="scale")
-
-            # Delete the temporary image
-            os.remove(filename)
-
-            # Add the image URL to the list
-            image_urls.append({
-                'public_id': result['public_id'],
-                'url': result['secure_url']
-            })
-        except Exception as e:
-            return jsonify({'message': str(e)}), 400
-
-    # Get other form data
-    factor = request.form.get('factor')
-    value = request.form.get('value')
-    recommendation = request.form.get('recommendation')
-
-    # Prepare data for database
     data = {
-        'factor': factor,
-        'value': value,
-        'recommendation': recommendation,
-        'images': image_urls,
+        'factor': data['factor'],
+        'value': data['value'],
+        'recommendation': data['recommendation'],
+        'image': {
+            'public_id': image_public_id,
+            'url': image_url
+        },
         'created_at': datetime.utcnow()
     }
 
@@ -75,27 +48,14 @@ def getAllQualityRecommendation():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# @recommendationRoutes.route('/admin/quality/recommendations/<id>', methods=['GET'])
-# def getQualityRecoDetails(id):
-#     from app import db
-#     try:
-#         recommendation = db.qualityRecommendations.find_one({"_id": ObjectId(id)}, {'_id': 0})
-#         if recommendation is None:
-#             return jsonify({'error': 'Recommendation not found'}), 404
-#         return jsonify(recommendation), 200
-#     except Exception as e:
-#         print(str(e))
-#         return jsonify({'error': str(e)}), 500
-
 @recommendationRoutes.route('/admin/quality/recommendations/<id>', methods=['GET'])
-def get_quality_reco(id):
+def getQualityReco(id):
     from app import db
     try:
         recommendation = db.qualityRecommendations.find_one({'_id': ObjectId(id)})
         if recommendation:
-            # Convert ObjectId to string to make it JSON serializable
             recommendation['_id'] = str(recommendation['_id'])
-            return jsonify(recommendation), 200
+            return jsonify({'qualityReco': recommendation}), 200
         else:
             return jsonify({'message': 'Recommendation not found'}), 404
     except Exception as e:
@@ -104,49 +64,36 @@ def get_quality_reco(id):
 @recommendationRoutes.route('/admin/quality/recommendations/<id>', methods=['PUT'])
 def updateQualityReco(id):
     from app import db
-    data = request.get_json()
-
-    # Handle images update
-    if 'images' in data:
-        images = data['images']
-        image_data = []
-        try:
-            for image in images:
-                if not 'cloudinary' in image:
-                    # Decode the base64 image data
-                    image_decoded = base64.b64decode(image['data'].split(',')[1])
-                    image_io = io.BytesIO(image_decoded)
-
-                    # Upload the image to Cloudinary
-                    result = upload(image_io, folder='recommendations', width=150, crop="scale")
-
-                    # Add the image URL to the list
-                    image_data.append({
-                        'public_id': result['public_id'],
-                        'url': result['secure_url']
-                    })
-                else:
-                    image_data.append(image)
-            data['images'] = image_data
-        except Exception as e:
-            return jsonify({'message': str(e)}), 400
-
-    # Update the data in the database
     try:
-        updated_recommendation = db.qualityRecommendations.find_one_and_update(
-            {'_id': ObjectId(id)},
-            {'$set': data},
-            return_document=ReturnDocument.AFTER
-        )
-        if not updated_recommendation:
-            return jsonify({'message': 'Recommendation not updated'}), 400
-    except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        data = request.form
+        update_data = {k: v for k, v in data.items() if k in ['factor', 'value', 'recommendation']}
 
-    return jsonify(str(updated_recommendation['_id'])), 200
+        # Handle image update
+        if 'image' in request.files:
+            image = request.files['image']
+            try:
+                result = upload(image, folder='recommendations', width=150, crop="scale")
+                image_url = result['url']
+                image_public_id = result['public_id']
+                update_data['image'] = {
+                    "url": image_url,
+                    "public_id": image_public_id,
+                }
+            except Exception as e:
+                return jsonify({'message': str(e)}), 400
+
+        # Update the user document with the given ID
+        qualityReco = db.qualityRecommendations.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+
+        if qualityReco.matched_count == 0:
+            return jsonify({'message': 'Recommendation not found'}), 404
+
+        return jsonify({'message': 'Recommendation updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @recommendationRoutes.route('/admin/quality/recommendations/<id>', methods=['DELETE'])
-def delete_recommendation(id):
+def deleteQualityReco(id):
     from app import db
     db.qualityRecommendations.delete_one({'_id': ObjectId(id)})
     return jsonify({'message': 'Recommendation deleted successfully'}), 200
@@ -155,45 +102,23 @@ def delete_recommendation(id):
 @recommendationRoutes.route('/admin/disease/recommendation/new', methods=['POST'])
 def newDiseaseRecommendation():
     from app import db
+    data = request.json
+    image = data['image']
+    try:
+        result = upload(image, folder='recommendations', width=150, crop="scale")
+        image_url = result['url']  
+        image_public_id = result['public_id'] 
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
-    # Get images from the request
-    images = request.files.getlist('images')
-
-    # List to store image URLs
-    image_urls = []
-
-    # Upload each image to Cloudinary
-    for image in images:
-        try:
-            # Save the image temporarily
-            filename = secure_filename(image.filename)
-            image.save(filename)
-
-            # Upload the image to Cloudinary
-            result = upload(filename, folder='recommendations', width=150, crop="scale")
-
-            # Delete the temporary image
-            os.remove(filename)
-
-            # Add the image URL to the list
-            image_urls.append({
-                'public_id': result['public_id'],
-                'url': result['secure_url']
-            })
-        except Exception as e:
-            return jsonify({'message': str(e)}), 400
-
-    # Get other form data
-    factor = request.form.get('factor')
-    value = request.form.get('value')
-    recommendation = request.form.get('recommendation')
-
-    # Prepare data for database
     data = {
-        'factor': factor,
-        'value': value,
-        'recommendation': recommendation,
-        'images': image_urls,
+        'factor': data['factor'],
+        'value': data['value'],
+        'recommendation': data['recommendation'],
+        'image': {
+            'public_id': image_public_id,
+            'url': image_url
+        },
         'created_at': datetime.utcnow()
     }
 
@@ -207,12 +132,61 @@ def getAllDiseaseRecommendation():
     from app import db
     try:
         # Retrieve all documents from the disease collection
-        diseaseReco= list(db.diseaseRecommendations.find({}, {'_id': 0}))
+        diseaseReco= list(db.diseaseRecommendations.find())
+        for disease in diseaseReco:
+            disease['_id'] = str(disease['_id'])
 
         # Return the disease data as JSON response
         return jsonify({'diseaseReco': diseaseReco}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@recommendationRoutes.route('/admin/disease/recommendations/<id>', methods=['GET'])
+def getDiseaseReco(id):
+    from app import db
+    try:
+        recommendation = db.diseaseRecommendations.find_one({'_id': ObjectId(id)})
+        if recommendation:
+            recommendation['_id'] = str(recommendation['_id'])
+            return jsonify({'diseaseReco': recommendation}), 200
+        else:
+            return jsonify({'message': 'Recommendation not found'}), 404
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+    
+@recommendationRoutes.route('/admin/disease/recommendations/<id>', methods=['PUT'])
+def updateDiseaseReco(id):
+    from app import db
+    try:
+        data = request.form
+        update_data = {k: v for k, v in data.items() if k in ['factor', 'value', 'recommendation']}
 
+        # Handle image update
+        if 'image' in request.files:
+            image = request.files['image']
+            try:
+                result = upload(image, folder='recommendations', width=150, crop="scale")
+                image_url = result['url']
+                image_public_id = result['public_id']
+                update_data['image'] = {
+                    "url": image_url,
+                    "public_id": image_public_id,
+                }
+            except Exception as e:
+                return jsonify({'message': str(e)}), 400
 
+        # Update the user document with the given ID
+        diseaseReco = db.diseaseRecommendations.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+
+        if diseaseReco.matched_count == 0:
+            return jsonify({'message': 'Recommendation not found'}), 404
+
+        return jsonify({'message': 'Recommendation updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@recommendationRoutes.route('/admin/disease/recommendations/<id>', methods=['DELETE'])
+def deleteDiseaseReco(id):
+    from app import db
+    db.diseaseRecommendations.delete_one({'_id': ObjectId(id)})
+    return jsonify({'message': 'Recommendation deleted successfully'}), 200
