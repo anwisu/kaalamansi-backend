@@ -143,7 +143,7 @@ def updateQualityReco(id):
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
-    return jsonify(updated_recommendation), 200
+    return jsonify(str(updated_recommendation['_id'])), 200
 
 @recommendationRoutes.route('/admin/quality/recommendations/<id>', methods=['DELETE'])
 def delete_recommendation(id):
