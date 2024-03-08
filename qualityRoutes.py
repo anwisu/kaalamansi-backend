@@ -200,7 +200,7 @@ def predictQuality():
         else:
             return jsonify({'error': 'Document not found'}), 404
 
-        return jsonify({'reco_data': newCombined}), 200
+        return jsonify({'quality_data': newCombined}), 200
     except Exception as e:
         print(str(e))
         return jsonify({'error': str(e)}), 500

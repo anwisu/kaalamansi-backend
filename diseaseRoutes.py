@@ -4,8 +4,16 @@ from bson import ObjectId
 from datetime import datetime
 import pandas as pd
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
+from middleware.auth import isAuthenticatedUser, authorizeRoles
+import jwt
 
 diseaseRoutes = Blueprint('diseaseRoutes', __name__)
+
+JWT_SECRET = 'hOBIEr9b5guVvBE5IGBeVqwrBAW7NuUS'
+
+def configure_jwt_secret(secret):
+    global JWT_SECRET
+    JWT_SECRET = secret
 
 @diseaseRoutes.route('/admin/disease/dataset', methods=['GET'])
 def getDataset():
@@ -142,19 +150,39 @@ def predict_disease():
             'created_at': datetime.utcnow(),
         }
         disease_id = db.disease.insert_one(disease_input).inserted_id
+        disease_data = db.disease.find_one({'_id': disease_id})
+        disease_data['_id'] = str(disease_data['_id'])
+        
+        token = request.headers.get('Authorization').split(' ')[1]
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = decoded_token['user_id']
+        user = db.users.find_one({"_id": ObjectId(user_id)})
 
-        # Combine input features, prediction, and recommendations
+        user['_id'] = str(user['_id'])
+
+        
         combined_data = {
-            'disease_id': disease_id,  # Keep disease_id as ObjectId
+            'user': user,
+            # 'disease_id': disease_id,
+            'disease_data': disease_data,
             'fertilizerReco': fertilizerReco['recommendation'] if fertilizerReco else '',
+            'fertilizer_image': fertilizerReco['image'] if fertilizerReco and 'image' in fertilizerReco else '',
             'wateringReco': wateringReco['recommendation'] if wateringReco else '',
+            'watering_image': wateringReco['image'] if wateringReco and 'image' in wateringReco else '',
             'discolorReco': discolorReco['recommendation'] if discolorReco else '',
+            'discolor_image': discolorReco['image'] if discolorReco and 'image' in discolorReco else '',
             'lesionReco': lesionReco['recommendation'] if lesionReco else '',
+            'lesion_image': lesionReco['image'] if lesionReco and 'image' in lesionReco else '',
             'leafReco': leafReco['recommendation'] if leafReco else '',
+            'leaf_image': leafReco['image'] if leafReco and 'image' in leafReco else '',
             'wiltingReco': wiltingReco['recommendation'] if wiltingReco else '',
+            'wilting_image': wiltingReco['image'] if wiltingReco and 'image' in wiltingReco else '',
             'pruningReco': pruningReco['recommendation'] if pruningReco else '',
+            'pruning_image': pruningReco['image'] if pruningReco and 'image' in pruningReco else '',
             'pestReco': pestReco['recommendation'] if pestReco else '',
+            'pest_image': pestReco['image'] if pestReco and 'image' in pestReco else '',
             'pesticideReco': pesticideReco['recommendation'] if pesticideReco else '',
+            'pesticide_image': pesticideReco['image'] if pesticideReco and 'image' in pesticideReco else '',
             'created_at': datetime.utcnow(),
         }
 
@@ -171,7 +199,7 @@ def predict_disease():
         else:
             return jsonify({'error': 'Document not found'}), 404
         
-        return jsonify({'reco_data': newCombined}), 200
+        return jsonify({'disease_data': newCombined}), 200
         # return jsonify({'inserted_data': newDisease}), 200
     except Exception as e:
         print(str(e))  # Print error message to console
@@ -182,12 +210,10 @@ def get_latest_predicted_disease(id):
     from app import db
     try:
         # Retrieve the document with the given ID from the combinedDiseaseResult collection
-        reco_data = db.combinedDiseaseResult.find_one({'_id': ObjectId(id)})
-        if reco_data:
-            reco_data['_id'] = str(reco_data['_id'])
-            if 'disease_id' in reco_data:
-                reco_data['disease_id'] = str(reco_data['disease_id'])
-            return jsonify({'reco_data': reco_data}), 200
+        disease_data = db.combinedDiseaseResult.find_one({'_id': ObjectId(id)})
+        if disease_data:
+            disease_data['_id'] = str(disease_data['_id'])
+            return jsonify({'disease_data': disease_data}), 200
         else:
             return jsonify({'error': 'No recommendation data found with the given ID'}), 404
     except Exception as e:
@@ -200,7 +226,7 @@ def get_AllDisease():
         # Retrieve all documents from the disease collection
         disease_data = list(db.disease.find())
         for disease in disease_data:
-                    disease['_id'] = str(disease['_id'])
+            disease['_id'] = str(disease['_id'])
         # Return the disease data as JSON response
         return jsonify({'disease_data': disease_data}), 200
     except Exception as e:
@@ -229,8 +255,6 @@ def delete_disease(disease_id):
         
         # Delete the disease document from the disease collection
         result = db.disease.delete_one({'_id': disease_id})
-
-        # Delete the combined disease result document from the combinedDiseaseResult collection
         db.combinedDiseaseResult.delete_one({'disease_id': disease_id})
 
         if result.deleted_count > 0:

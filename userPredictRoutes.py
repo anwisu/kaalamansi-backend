@@ -16,9 +16,10 @@ def configure_jwt_secret(secret):
 
 userPredictRoutes = Blueprint('userPredictRoutes', __name__)
 
+# QUALITY PREDICTIONS
 @userPredictRoutes.route('/me/quality/predictions/all', methods=['GET'])
 @isAuthenticatedUser
-def get_user_predictions():
+def getAllUserQualityPredictions():
     from app import db
 
     try:
@@ -36,6 +37,33 @@ def get_user_predictions():
             prediction['_id'] = str(prediction['_id'])
             if 'quality_id' in prediction:
                 prediction['quality_id'] = str(prediction['quality_id'])
+
+        return jsonify({'user_predictions': userPredictions_list}), 200
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error': str(e)}), 500
+    
+# DISEASE PREDICTIONS
+@userPredictRoutes.route('/me/disease/predictions/all', methods=['GET'])
+@isAuthenticatedUser
+def getAllUserDiseasePredictions():
+    from app import db
+
+    try:
+        token = request.headers.get('Authorization').split(' ')[1]
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = decoded_token['user_id']
+
+        userPredictions = db.combinedDiseaseResult.find({'user._id': user_id})
+
+        # Convert the cursor to a list of dictionaries
+        userPredictions_list = list(userPredictions)
+
+        # Convert ObjectIds to strings
+        for prediction in userPredictions_list:
+            prediction['_id'] = str(prediction['_id'])
+            if 'disease_id' in prediction:
+                prediction['disease_id'] = str(prediction['quality_id'])
 
         return jsonify({'user_predictions': userPredictions_list}), 200
     except Exception as e:
