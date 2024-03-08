@@ -42,6 +42,27 @@ def getAllUserQualityPredictions():
     except Exception as e:
         print(str(e))
         return jsonify({'error': str(e)}), 500
+
+@userPredictRoutes.route('/me/quality/predictions/<id>', methods=['DELETE'])
+@isAuthenticatedUser
+def deleteUserQualityPrediction(id):
+    from app import db
+
+    try:
+        token = request.headers.get('Authorization').split(' ')[1]
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = decoded_token['user_id']
+
+        # Find the prediction and delete it
+        result = db.combinedQualityResult.delete_one({'_id': ObjectId(id), 'user._id': user_id})
+
+        if result.deleted_count == 0:
+            return jsonify({'error': 'No prediction found to delete'}), 404
+
+        return jsonify({'message': 'Prediction deleted successfully'}), 200
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error': str(e)}), 500
     
 # DISEASE PREDICTIONS
 @userPredictRoutes.route('/me/disease/predictions/all', methods=['GET'])
@@ -66,6 +87,27 @@ def getAllUserDiseasePredictions():
                 prediction['disease_id'] = str(prediction['quality_id'])
 
         return jsonify({'user_predictions': userPredictions_list}), 200
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error': str(e)}), 500
+    
+@userPredictRoutes.route('/me/disease/predictions/<id>', methods=['DELETE'])
+@isAuthenticatedUser
+def deleteUserDiseasePrediction(id):
+    from app import db
+
+    try:
+        token = request.headers.get('Authorization').split(' ')[1]
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = decoded_token['user_id']
+
+        # Find the prediction and delete it
+        result = db.combinedDiseaseResult.delete_one({'_id': ObjectId(id), 'user._id': user_id})
+
+        if result.deleted_count == 0:
+            return jsonify({'error': 'No prediction found to delete'}), 404
+
+        return jsonify({'message': 'Prediction deleted successfully'}), 200
     except Exception as e:
         print(str(e))
         return jsonify({'error': str(e)}), 500
