@@ -6,8 +6,15 @@ from datetime import datetime
 from bson import ObjectId 
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
 from middleware.auth import isAuthenticatedUser, authorizeRoles
+import jwt
 
 qualityRoutes = Blueprint('qualityRoutes', __name__)
+
+JWT_SECRET = 'hOBIEr9b5guVvBE5IGBeVqwrBAW7NuUS'
+
+def configure_jwt_secret(secret):
+    global JWT_SECRET
+    JWT_SECRET = secret
 
 @qualityRoutes.route('/admin/quality/dataset', methods=['GET'])
 def getDataset():
@@ -75,7 +82,8 @@ sun_mapping = {'full shade': 0, 'partial shade': 1, 'full sun': 2}
 location_mapping = {'patio': 0, 'balcony': 1, 'rooftop': 2}
 
 @qualityRoutes.route('/predict/quality', methods=['POST'])
-def predict_quality():
+@isAuthenticatedUser
+def predictQuality():
     from app import db
     quality_model = load_quality_model()
     try:
@@ -152,21 +160,29 @@ def predict_quality():
             'created_at': datetime.utcnow(),
         }
         quality_id = db.quality.insert_one(quality_input).inserted_id
+        quality_data = db.quality.find_one({'_id': quality_id})
+        quality_data['_id'] = str(quality_data['_id'])
 
-        # Combine input features, prediction, and recommendations
+        token = request.headers.get('Authorization').split(' ')[1]
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = decoded_token['user_id']
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+
+        user['_id'] = str(user['_id'])
+
         combined_data = {
-            'quality_id': quality_id,  # Keep quality_id as ObjectId
+            'user': user,
+            # 'quality_id': quality_id, 
+            'quality_data': quality_data, 
             'soil_recommendation': soil_recommendation['recommendation'] if soil_recommendation else '',
             'watering_recommendation': watering_recommendation['recommendation'] if watering_recommendation else '',
             'sun_recommendation': sun_recommendation['recommendation'] if sun_recommendation else '',
             'created_at': datetime.utcnow(),
-            # 'quality_data': quality_input  # Add quality input data to combined data
         }
 
 
         # return jsonify({'quality_id': str(quality_id), 'predicted_quality': predicted_quality}), 200
-        newQuality = db.quality.find_one({'_id': quality_id}, {'_id': 0})
-
+        db.quality.find_one({'_id': quality_id}, {'_id': 0})
         combined_id = db.combinedQualityResult.insert_one(combined_data).inserted_id
 
         # Retrieve the inserted data from the database
@@ -183,7 +199,7 @@ def predict_quality():
 
         return jsonify({'reco_data': newCombined}), 200
     except Exception as e:
-        print(str(e))  # Print error message to console
+        print(str(e))
         return jsonify({'error': str(e)}), 500
 
 @qualityRoutes.route('/predict/quality/<id>', methods=['GET'])
@@ -194,8 +210,8 @@ def get_latest_predicted_quality(id):
         reco_data = db.combinedQualityResult.find_one({'_id': ObjectId(id)})
         if reco_data:
             reco_data['_id'] = str(reco_data['_id'])
-            if 'quality_id' in reco_data:
-                reco_data['quality_id'] = str(reco_data['quality_id'])
+            # if 'quality_id' in reco_data:
+            #     reco_data['quality_id'] = str(reco_data['quality_id'])
             return jsonify({'reco_data': reco_data}), 200
         else:
             return jsonify({'error': 'No recommendation data found with the given ID'}), 404

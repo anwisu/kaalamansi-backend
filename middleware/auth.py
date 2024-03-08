@@ -12,16 +12,18 @@ def isAuthenticatedUser(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         from app import db
-        token = request.headers.get('Authorization').split(' ')[1]
+        token = request.headers.get('Authorization')
         if not token:
             return jsonify({'message':'Login first to access this resource'}), 401
         try:
+            token = token.split(' ')[1]
             decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        except jwt.InvalidTokenError:
+        except (IndexError, jwt.InvalidTokenError):
             return jsonify({'message':'Invalid token'}), 401
         g.user = db.users.find_one({"_id": ObjectId(decoded['user_id'])})
         return f(*args, **kwargs)
     return decorated_function
+
 
 def authorizeRoles(*roles):
     def decorator(f):
