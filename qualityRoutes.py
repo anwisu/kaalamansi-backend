@@ -210,12 +210,12 @@ def get_latest_predicted_quality(id):
     from app import db
     try:
         # Retrieve the document with the given ID from the combinedQualityResult collection
-        reco_data = db.combinedQualityResult.find_one({'_id': ObjectId(id)})
-        if reco_data:
-            reco_data['_id'] = str(reco_data['_id'])
+        quality_data = db.combinedQualityResult.find_one({'_id': ObjectId(id)})
+        if quality_data:
+            quality_data['_id'] = str(quality_data['_id'])
             # if 'quality_id' in reco_data:
             #     reco_data['quality_id'] = str(reco_data['quality_id'])
-            return jsonify({'reco_data': reco_data}), 200
+            return jsonify({'quality_data': quality_data}), 200
         else:
             return jsonify({'error': 'No recommendation data found with the given ID'}), 404
     except Exception as e:
