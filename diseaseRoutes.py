@@ -263,3 +263,36 @@ def delete_disease(disease_id):
             return jsonify({'error': 'Document not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@diseaseRoutes.route('/admin/disease-predicts-per-month', methods=['GET'])
+def getDiseasePredictsPerMonth():
+    from app import db
+    try:
+        # Aggregate the number of disease predictions per month
+        predicts_per_month = list(db.disease.aggregate([
+            {
+                '$group': {
+                    '_id': {
+                        'year': {'$year': '$created_at'},
+                        'month': {'$month': '$created_at'}
+                    },
+                    'infected': {
+                        '$sum': {
+                            '$cond': [{'$eq': ['$predicted_disease', 'infected']}, 1, 0]
+                        }
+                    },
+                    'notInfected': {
+                        '$sum': {
+                            '$cond': [{'$eq': ['$predicted_disease', 'not infected']}, 1, 0]
+                        }
+                    },
+                    'lastCreatedAt': { '$max': '$created_at' } 
+                }
+            },
+            {
+                '$sort': {'_id': 1}
+            }
+        ]))
+        return jsonify({'predicts_per_month': predicts_per_month}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

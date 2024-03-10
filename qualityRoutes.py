@@ -251,7 +251,7 @@ def get_AllQuality():
         return jsonify({'error': str(e)}), 500
     
 @qualityRoutes.route('/admin/quality/<quality_id>', methods=['DELETE'])
-def delete_quality(quality_id):
+def deleteQuality(quality_id):
     from app import db
     try:
         # Convert string to ObjectId
@@ -266,5 +266,38 @@ def delete_quality(quality_id):
             return jsonify({'error': 'Document not found'}), 404
     except Exception as e:
         print(str(e))  # Print error message to console
+        return jsonify({'error': str(e)}), 500
+    
+@qualityRoutes.route('/admin/quality-predicts-per-month', methods=['GET'])
+def getQualityPredictsPerMonth():
+    from app import db
+    try:
+        # Aggregate quality predicts per month
+        predicts_per_month = list(db.quality.aggregate([
+            {
+                '$group': {
+                    '_id': {
+                        'year': {'$year': '$created_at'},
+                        'month': {'$month': '$created_at'}
+                    },
+                    'low': {
+                        '$sum': {
+                            '$cond': [{'$eq': ['$predicted_quality', 'low']}, 1, 0]
+                        }
+                    },
+                    'high': {
+                        '$sum': {
+                            '$cond': [{'$eq': ['$predicted_quality', 'high']}, 1, 0]
+                        }
+                    },
+                    'lastCreatedAt': { '$max': '$created_at' } 
+                }
+            },
+            {
+                '$sort': {'_id': 1}
+            }
+        ]))
+        return jsonify({'predicts_per_month': predicts_per_month}), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
